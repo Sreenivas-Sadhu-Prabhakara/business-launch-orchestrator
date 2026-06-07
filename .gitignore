@@ -1,0 +1,22 @@
+# Secrets
+.env
+*.env.local
+
+# Go
+/backend/server
+/backend/bin/
+*.test
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

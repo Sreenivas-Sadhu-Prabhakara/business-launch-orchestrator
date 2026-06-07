@@ -1,0 +1,48 @@
+# One command to run the whole stack: `docker compose up --build`
+# Then open http://localhost:3000 (UI) and http://localhost:8080 (API).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: biz_launch
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d biz_launch"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  backend:
+    build: ./backend
+    environment:
+      PORT: "8080"
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/biz_launch?sslmode=disable"
+      CORS_ORIGIN: "*"
+      # Payment sandbox keys — leave blank to use the deterministic mock.
+      RAZORPAY_KEY_ID: "${RAZORPAY_KEY_ID:-}"
+      RAZORPAY_KEY_SECRET: "${RAZORPAY_KEY_SECRET:-}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      PAYMONGO_SECRET_KEY: "${PAYMONGO_SECRET_KEY:-}"
+      FORCE_MOCK: "${FORCE_MOCK:-false}"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8080"
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
