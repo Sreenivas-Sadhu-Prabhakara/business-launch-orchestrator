@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Stepper } from "@/components/Stepper";
 import { PlanPreview } from "@/components/StepList";
 import {
@@ -93,8 +94,9 @@ export default function Home() {
         <h1>Business Launch Orchestrator</h1>
       </div>
       <p className="subtitle">
-        Incorporate, register for tax, open banking, activate payments and file
-        compliance — across India, the Philippines and the US — from one flow.
+        Strategy, KYC, liabilities, IP, incorporation, tax, registrations, banking,
+        payments and compliance — across India, the Philippines and the US — from one flow.{" "}
+        <Link href="/how-it-works">See how it works →</Link>
       </p>
 
       <Stepper steps={WIZARD} current={phase} />

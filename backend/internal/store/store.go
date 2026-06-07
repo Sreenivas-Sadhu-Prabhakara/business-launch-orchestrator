@@ -42,13 +42,18 @@ type Store struct {
 	pool *pgxpool.Pool
 }
 
-// New opens a connection pool to the given database URL.
-func New(ctx context.Context, databaseURL string) (*Store, error) {
+// New opens a connection pool to the given database URL. maxConns should be
+// kept small on serverless runtimes (each instance opens its own pool) — front
+// the database with a pooler (PgBouncer / Neon / RDS Proxy) at scale.
+func New(ctx context.Context, databaseURL string, maxConns int) (*Store, error) {
 	cfg, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse database url: %w", err)
 	}
-	cfg.MaxConns = 10
+	if maxConns <= 0 {
+		maxConns = 10
+	}
+	cfg.MaxConns = int32(maxConns)
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)

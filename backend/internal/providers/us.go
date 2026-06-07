@@ -20,27 +20,40 @@ import (
 //   - Compliance: Registered agent + state tax / franchise registration
 type usAdapter struct {
 	cfg Config
-	pay *paymentClients
+	cl  *clients
 }
 
 func (a *usAdapter) Country() domain.Country { return domain.CountryUS }
 
 func (a *usAdapter) Plan() []domain.PlannedStep {
-	payMode := paymentMode(a.cfg, a.cfg.StripeSecretKey != "")
+	payMode := modeFor(a.cfg, a.cfg.StripeSecretKey != "")
 	return []domain.PlannedStep{
-		{Seq: 1, Type: domain.StepFounderKYC, Provider: "Persona / Middesk", Title: "Verify founder identity", Mode: domain.ModeMock},
-		{Seq: 2, Type: domain.StepNameCheck, Provider: "Secretary of State", Title: "Check entity name availability", Mode: domain.ModeMock},
-		{Seq: 3, Type: domain.StepEntityReg, Provider: "Middesk Agents (state filing)", Title: "File Articles of Organization", Mode: domain.ModeMock},
-		{Seq: 4, Type: domain.StepTaxReg, Provider: "IRS (Form SS-4)", Title: "Obtain Federal EIN", Mode: domain.ModeMock},
-		{Seq: 5, Type: domain.StepBankAccount, Provider: "Mercury", Title: "Open business bank account", Mode: domain.ModeMock},
-		{Seq: 6, Type: domain.StepPaymentGateway, Provider: "Stripe", Title: "Activate payment processing", Mode: payMode},
-		{Seq: 7, Type: domain.StepCompliance, Provider: "Registered agent + state tax", Title: "Register agent & state tax", Mode: domain.ModeMock},
+		{Seq: 1, Type: domain.StepStrategyCheck, Provider: "Claude (AI strategist)", Title: "Strategy & viability assessment", Mode: modeFor(a.cfg, a.cfg.AnthropicAPIKey != "")},
+		{Seq: 2, Type: domain.StepFounderKYC, Provider: "Persona / Middesk", Title: "Verify founder identity", Mode: domain.ModeMock},
+		{Seq: 3, Type: domain.StepLiabilitiesCheck, Provider: "trade.gov CSL + OFAC/UCC/PACER", Title: "Liabilities & sanctions screening", Mode: modeFor(a.cfg, a.cfg.CSLAPIKey != "")},
+		{Seq: 4, Type: domain.StepNameCheck, Provider: "Secretary of State", Title: "Check entity name availability", Mode: domain.ModeMock},
+		{Seq: 5, Type: domain.StepIPCheck, Provider: "RDAP + USPTO", Title: "Trademark & domain check", Mode: modeFor(a.cfg, true)},
+		{Seq: 6, Type: domain.StepEntityReg, Provider: "Middesk Agents (state filing)", Title: "File Articles of Organization", Mode: domain.ModeMock},
+		{Seq: 7, Type: domain.StepTaxReg, Provider: "IRS (Form SS-4)", Title: "Obtain Federal EIN", Mode: domain.ModeMock},
+		{Seq: 8, Type: domain.StepRegistrations, Provider: "State license + FinCEN BOI", Title: "Licenses & registrations", Mode: domain.ModeMock},
+		{Seq: 9, Type: domain.StepBankAccount, Provider: "Mercury", Title: "Open business bank account", Mode: domain.ModeMock},
+		{Seq: 10, Type: domain.StepPaymentGateway, Provider: "Stripe", Title: "Activate payment processing", Mode: payMode},
+		{Seq: 11, Type: domain.StepCompliance, Provider: "Registered agent + state tax", Title: "Register agent & state tax", Mode: domain.ModeMock},
 	}
 }
 
 func (a *usAdapter) Execute(ctx context.Context, step domain.StepType, b domain.Business) (domain.StepResult, error) {
 	state := stateCode(b.Address.State, "DE")
 	switch step {
+	case domain.StepStrategyCheck:
+		return a.cl.strat.Assess(ctx, b)
+
+	case domain.StepLiabilitiesCheck:
+		return a.cl.liab.Screen(ctx, b)
+
+	case domain.StepIPCheck:
+		return a.cl.ip.Check(ctx, b)
+
 	case domain.StepFounderKYC:
 		return domain.StepResult{
 			ExternalRef: "inq_" + digits("uskyc"+b.ID, 12),
@@ -74,6 +87,19 @@ func (a *usAdapter) Execute(ctx context.Context, step domain.StepType, b domain.
 			Data:        map[string]any{"ein": ein, "form": "SS-4"},
 		}, nil
 
+	case domain.StepRegistrations:
+		lic := state + "-BL-" + digits("uslic"+b.ID, 8)
+		return domain.StepResult{
+			ExternalRef: lic,
+			Message:     "State licenses & federal registrations filed.",
+			Data: map[string]any{
+				"state_business_license": lic,
+				"dba_assumed_name":       "DBA-" + digits("usdba"+b.ID, 8),
+				"sales_tax_permit":       state + "-ST-" + digits("usst"+b.ID, 8),
+				"fincen_boi_report":      "BOIR-" + digits("usboi"+b.ID, 10),
+			},
+		}, nil
+
 	case domain.StepBankAccount:
 		acct := digits("usbank"+b.ID, 10)
 		return domain.StepResult{
@@ -83,7 +109,7 @@ func (a *usAdapter) Execute(ctx context.Context, step domain.StepType, b domain.
 		}, nil
 
 	case domain.StepPaymentGateway:
-		return a.pay.Stripe(ctx, b)
+		return a.cl.pay.Stripe(ctx, b)
 
 	case domain.StepCompliance:
 		return domain.StepResult{

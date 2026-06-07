@@ -33,7 +33,20 @@ type Config struct {
 	RazorpayKeySecret string
 	StripeSecretKey   string
 	PayMongoSecretKey string
+	AnthropicAPIKey   string
+	AnthropicModel    string
+	CSLAPIKey         string
 	ForceMock         bool
+}
+
+// clients bundles the shared, country-agnostic integration clients that each
+// adapter calls into.
+type clients struct {
+	cfg   Config
+	pay   *paymentClients
+	strat *strategyClient
+	ip    *ipClient
+	liab  *liabilitiesClient
 }
 
 // Registry maps a country to its adapter.
@@ -41,17 +54,21 @@ type Registry struct {
 	adapters map[domain.Country]Adapter
 }
 
-// NewRegistry wires up the country adapters and shared payment clients.
+// NewRegistry wires up the country adapters and the shared integration clients.
 func NewRegistry(cfg Config) *Registry {
-	pay := &paymentClients{
-		cfg:  cfg,
-		http: &http.Client{Timeout: 20 * time.Second},
+	httpc := &http.Client{Timeout: 25 * time.Second}
+	cl := &clients{
+		cfg:   cfg,
+		pay:   &paymentClients{cfg: cfg, http: httpc},
+		strat: &strategyClient{cfg: cfg, http: httpc},
+		ip:    &ipClient{cfg: cfg, http: httpc},
+		liab:  &liabilitiesClient{cfg: cfg, http: httpc},
 	}
 	return &Registry{
 		adapters: map[domain.Country]Adapter{
-			domain.CountryIndia:       &indiaAdapter{cfg: cfg, pay: pay},
-			domain.CountryPhilippines: &phAdapter{cfg: cfg, pay: pay},
-			domain.CountryUS:          &usAdapter{cfg: cfg, pay: pay},
+			domain.CountryIndia:       &indiaAdapter{cfg: cfg, cl: cl},
+			domain.CountryPhilippines: &phAdapter{cfg: cfg, cl: cl},
+			domain.CountryUS:          &usAdapter{cfg: cfg, cl: cl},
 		},
 	}
 }
@@ -89,9 +106,9 @@ func digits(seed string, n int) string {
 	return fmt.Sprintf("%0*d", n, seedNum(seed, max))
 }
 
-// paymentMode reports whether a payment provider will run live or mock given
-// the configured keys.
-func paymentMode(cfg Config, hasKey bool) string {
+// modeFor reports whether a step will run live or mock: live only when a key
+// (or keyless live capability) is present and FORCE_MOCK is off.
+func modeFor(cfg Config, hasKey bool) string {
 	if cfg.ForceMock || !hasKey {
 		return domain.ModeMock
 	}

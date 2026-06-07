@@ -24,7 +24,7 @@ func main() {
 	defer cancel()
 
 	// Connect to Postgres (retry briefly so `docker compose up` ordering is forgiving).
-	st, err := connectWithRetry(ctx, cfg.DatabaseURL, 10, 2*time.Second)
+	st, err := connectWithRetry(ctx, cfg.DatabaseURL, cfg.DBMaxConns, 10, 2*time.Second)
 	if err != nil {
 		log.Fatalf("database: %v", err)
 	}
@@ -40,6 +40,9 @@ func main() {
 		RazorpayKeySecret: cfg.RazorpayKeySecret,
 		StripeSecretKey:   cfg.StripeSecretKey,
 		PayMongoSecretKey: cfg.PayMongoSecretKey,
+		AnthropicAPIKey:   cfg.AnthropicAPIKey,
+		AnthropicModel:    cfg.AnthropicModel,
+		CSLAPIKey:         cfg.CSLAPIKey,
 		ForceMock:         cfg.ForceMock,
 	})
 	svc := orchestrator.New(st, reg)
@@ -65,10 +68,10 @@ func main() {
 	_ = srv.Shutdown(shutdownCtx)
 }
 
-func connectWithRetry(ctx context.Context, url string, attempts int, delay time.Duration) (*store.Store, error) {
+func connectWithRetry(ctx context.Context, url string, maxConns, attempts int, delay time.Duration) (*store.Store, error) {
 	var lastErr error
 	for i := 0; i < attempts; i++ {
-		st, err := store.New(ctx, url)
+		st, err := store.New(ctx, url, maxConns)
 		if err == nil {
 			return st, nil
 		}

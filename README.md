@@ -1,10 +1,10 @@
 # 🚀 Business Launch Orchestrator
 
-**One end-to-end flow that integrates every API call needed to launch a business in 🇮🇳 India, 🇵🇭 the Philippines, or 🇺🇸 the United States** — founder KYC → name reservation → incorporation → tax registration → business banking → payment gateway → statutory compliance.
+**One end-to-end flow that integrates every API call needed to launch a business in 🇮🇳 India, 🇵🇭 the Philippines, or 🇺🇸 the United States** — AI strategy → founder KYC → liabilities/sanctions screening → name + trademark/domain check → incorporation → tax registration → licenses & registrations → business banking → payment gateway → statutory compliance.
 
-A **Go** orchestration engine runs a country-specific pipeline of provider integrations, persists every step + response in **Postgres**, and a **Next.js** wizard walks you through it visually.
+A **Go** orchestration engine runs a country-specific 11-step pipeline of provider integrations, persists every step + response in **Postgres**, and a **Next.js** wizard walks you through it visually. The app ships **serverless-first** (Lambda / Cloud Run / Container Apps) and includes an in-app **[How it works](#)** explainer and **[Deploy](#)** guide.
 
-> Integration mode is **hybrid**: payment steps hit **real provider sandboxes** (Razorpay / Stripe / PayMongo) when you supply test keys, and every other step (government registries, KYC, banking) is a **deterministic mock** whose request/response shape mirrors the real upstream API — so the whole thing runs end-to-end with **zero credentials**, and you wire real APIs in incrementally.
+> Integration mode is **hybrid**: payment steps hit **real provider sandboxes** (Razorpay / Stripe / PayMongo), the AI strategy step calls **Claude**, the IP step does a **real RDAP domain lookup**, and sanctions screening uses the **trade.gov** list — each when you supply its key (RDAP needs none). Every other step (government registries, KYC, banking) is a **deterministic mock** whose request/response shape mirrors the real upstream API, so the whole thing runs end-to-end with **zero credentials** and you wire real APIs in incrementally.
 
 ---
 
@@ -34,19 +34,23 @@ A **Go** orchestration engine runs a country-specific pipeline of provider integ
 
 ## 🧭 The launch pipeline
 
-Every country runs the same 7 logical steps; each maps to different real upstreams:
+Every country runs the same 11 logical steps; each maps to different real upstreams:
 
 | # | Step | 🇮🇳 India | 🇵🇭 Philippines | 🇺🇸 United States |
 |---|------|----------|----------------|------------------|
-| 1 | Founder KYC | SurePass (PAN + Aadhaar) | HyperVerge (PhilID) | Persona / Middesk |
-| 2 | Name check | MCA RUN | SEC name verification | Secretary of State |
-| 3 | Entity registration | MCA SPICe+ → **CIN** | SEC eSPARC → **SEC reg no.** | State filing → **filing no.** |
-| 4 | Tax registration | Income Tax + GSTN → **PAN/TAN/GSTIN** | BIR → **TIN** | IRS SS-4 → **EIN** |
-| 5 | Business banking | RazorpayX | UnionBank | Mercury |
-| 6 | **Payment gateway** | **Razorpay** 🟢 | **PayMongo** 🟢 | **Stripe** 🟢 |
-| 7 | Compliance | EPFO + ESIC | SSS + PhilHealth + Pag-IBIG | Registered agent + state tax |
+| 1 | **Strategy & viability** | **Claude (AI)** 🟢 | **Claude (AI)** 🟢 | **Claude (AI)** 🟢 |
+| 2 | Founder KYC | SurePass (PAN + Aadhaar) | HyperVerge (PhilID) | Persona / Middesk |
+| 3 | Liabilities & sanctions | trade.gov 🟢 + MCA/GST/CIBIL | trade.gov 🟢 + SEC/BIR/CIC | trade.gov 🟢 + OFAC/UCC/PACER |
+| 4 | Name check | MCA RUN | SEC name verification | Secretary of State |
+| 5 | **Trademark & domain** | **RDAP** 🟢 + IP India | **RDAP** 🟢 + IPOPHL | **RDAP** 🟢 + USPTO |
+| 6 | Entity registration | MCA SPICe+ → **CIN** | SEC eSPARC → **SEC reg no.** | State filing → **filing no.** |
+| 7 | Tax registration | Income Tax + GSTN → **PAN/TAN/GSTIN** | BIR → **TIN** | IRS SS-4 → **EIN** |
+| 8 | Licenses & registrations | Udyam + DGFT IEC + S&E | Mayor's + Barangay + DTI | State license + FinCEN BOI |
+| 9 | Business banking | RazorpayX | UnionBank | Mercury |
+| 10 | **Payment gateway** | **Razorpay** 🟢 | **PayMongo** 🟢 | **Stripe** 🟢 |
+| 11 | Compliance | EPFO + ESIC | SSS + PhilHealth + Pag-IBIG | Registered agent + state tax |
 
-🟢 = real sandbox call when a test key is configured, otherwise deterministic mock.
+🟢 = real call when its key is configured (RDAP needs none), otherwise a deterministic mock.
 
 ---
 
@@ -197,18 +201,23 @@ curl -s http://localhost:8080/api/v1/businesses/$BIZ | jq
 
 ## 🟢 Going live (real sandbox calls)
 
-The payment step is wired to real provider sandboxes. Add any of these to `.env`
+Several steps are wired to real services. Add any of these to `.env`
 (or export them before `go run`) and that step flips from `mock` to `live`:
 
-| Country | Provider | Key(s) | Get them |
-|---------|----------|--------|----------|
-| 🇮🇳 IN | Razorpay | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay Dashboard → Settings → API Keys (`rzp_test_…`) |
-| 🇺🇸 US | Stripe | `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys (`sk_test_…`) |
-| 🇵🇭 PH | PayMongo | `PAYMONGO_SECRET_KEY` | PayMongo Dashboard → Developers → API keys (`sk_test_…`) |
+| Step | Service | Key(s) | Get them |
+|------|---------|--------|----------|
+| Strategy | Anthropic / Claude | `ANTHROPIC_API_KEY` (`ANTHROPIC_MODEL`) | console.anthropic.com → API keys |
+| Liabilities | trade.gov CSL | `CSL_API_KEY` | Free key at api.data.gov |
+| IP / domain | RDAP | — *(none — public)* | Works out of the box |
+| Payments 🇮🇳 | Razorpay | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay → Settings → API Keys (`rzp_test_…`) |
+| Payments 🇺🇸 | Stripe | `STRIPE_SECRET_KEY` | Stripe → Developers → API keys (`sk_test_…`) |
+| Payments 🇵🇭 | PayMongo | `PAYMONGO_SECRET_KEY` | PayMongo → Developers → API keys (`sk_test_…`) |
 
-Each live call creates a real test-mode object (a Razorpay order / Stripe
-customer / PayMongo payment link) and stores the returned id as the step's
-`external_ref`. Set `FORCE_MOCK=true` to disable all live calls.
+The AI step calls Claude (with a **prompt-cached** system prompt) and returns a
+structured viability assessment. Each live payment call creates a real test-mode
+object (Razorpay order / Stripe customer / PayMongo link); the IP step does a live
+RDAP domain lookup. Returned ids are stored as the step's `external_ref`. Set
+`FORCE_MOCK=true` to disable every live call.
 
 > **Wiring a government API for real:** every mock step in
 > `backend/internal/providers/{india,ph,us}.go` documents its real upstream in a
@@ -217,27 +226,64 @@ customer / PayMongo payment link) and stores the returned id as the step's
 
 ---
 
+## ☁️ Deploy serverless
+
+The stack is **serverless-first**. The Go API is a plain HTTP server: on AWS it
+runs on **Lambda** via the [Lambda Web Adapter](https://github.com/awslabs/aws-lambda-web-adapter)
+(no code changes), and on GCP/Azure it runs as a **scale-to-zero container**.
+Pair it with a serverless Postgres (Neon / Aurora Serverless v2 / Cloud SQL / Azure Flexible).
+
+```bash
+# 1) serverless Postgres (any cloud) — create at neon.tech, copy the POOLED URL
+export DATABASE_URL="postgres://USER:PASS@ep-xxxx-pooler.REGION.aws.neon.tech/biz_launch?sslmode=require"
+
+# 2a) AWS — Lambda via SAM
+cd deploy/aws-sam && sam build && sam deploy --guided \
+  --parameter-overrides DatabaseUrl="$DATABASE_URL" AnthropicApiKey="$ANTHROPIC_API_KEY"
+
+# 2b) GCP — Cloud Run (scale to zero)
+gcloud run deploy biz-launch-api --source ./backend --region us-central1 \
+  --allow-unauthenticated --set-env-vars "DATABASE_URL=$DATABASE_URL,DB_MAX_CONNS=4"
+
+# 2c) Azure — Container Apps (scale to zero)
+az containerapp up --name biz-launch-api --resource-group biz-launch \
+  --ingress external --target-port 8080 --source ./backend --env-vars "DATABASE_URL=$DATABASE_URL"
+```
+
+Full walkthrough: **[`deploy/README.md`](deploy/README.md)** and the in-app **Deploy** page (`/deploy`).
+On serverless, keep `DB_MAX_CONNS` small (the Lambda image defaults to `2`) and use a pooled DB endpoint.
+
 ## 🗂️ Project structure
 
 ```
 business-launch-orchestrator/
 ├── docker-compose.yml            # postgres + backend + frontend
-├── .env.example                  # sandbox keys (all optional)
+├── .env.example                  # all keys (every one optional)
+├── deploy/                       # serverless IaC
+│   ├── aws-sam/template.yaml     # AWS Lambda (Web Adapter) + Function URL
+│   └── README.md                 # AWS / GCP / Azure walkthrough
 ├── backend/                      # Go orchestration service
 │   ├── cmd/server/main.go        # entrypoint, graceful shutdown, auto-migrate
+│   ├── Dockerfile                # container (Cloud Run / Container Apps)
+│   ├── Dockerfile.lambda         # AWS Lambda image (Web Adapter)
 │   ├── migrations/0001_init.sql  # embedded, applied on boot
 │   └── internal/
 │       ├── domain/               # dependency-free core types
 │       ├── store/                # Postgres persistence (pgx)
-│       ├── providers/            # per-country adapters + live payment clients
-│       │   ├── india.go ph.go us.go
-│       │   └── payments.go       # Razorpay / Stripe / PayMongo (real sandbox)
+│       ├── providers/            # per-country adapters + shared clients
+│       │   ├── india.go ph.go us.go    # country pipelines (11 steps each)
+│       │   ├── payments.go       # Razorpay / Stripe / PayMongo (real sandbox)
+│       │   ├── strategy.go       # Claude AI assessment (prompt-cached)
+│       │   ├── ip.go             # RDAP domain (live) + trademark search
+│       │   └── liabilities.go    # trade.gov sanctions + diligence checks
 │       ├── orchestrator/         # the pipeline engine
 │       └── api/                  # chi router + handlers
-└── frontend/                     # Next.js App Router wizard
+└── frontend/                     # Next.js App Router wizard (standalone build)
     ├── app/page.tsx              # country → details → review wizard
     ├── app/launch/[id]/page.tsx  # live step runner
-    ├── components/               # Stepper, StepList
+    ├── app/how-it-works/page.tsx # end-to-end explainer
+    ├── app/deploy/page.tsx       # serverless deploy guide
+    ├── components/               # Nav, Stepper, StepList, CodeBlock
     └── lib/api.ts                # typed API client
 ```
 

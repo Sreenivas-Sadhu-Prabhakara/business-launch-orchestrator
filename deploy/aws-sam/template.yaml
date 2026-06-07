@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Business Launch Orchestrator — serverless API on AWS Lambda (container image
+  + Lambda Web Adapter), exposed via a public Function URL. Pair with a
+  serverless Postgres (Aurora Serverless v2 or Neon).
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+    Description: Postgres connection string (use a pooled endpoint, e.g. Neon pooler / RDS Proxy)
+  CorsOrigin:
+    Type: String
+    Default: "*"
+  AnthropicApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+  StripeSecretKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+  CslApiKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+
+Resources:
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: ../../backend
+      Dockerfile: Dockerfile.lambda
+    Properties:
+      PackageType: Image
+      Architectures:
+        - arm64 # match the build host; switch to x86_64 if building on amd64
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          CORS_ORIGIN: !Ref CorsOrigin
+          DB_MAX_CONNS: "2"
+          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          CSL_API_KEY: !Ref CslApiKey
+      FunctionUrlConfig:
+        AuthType: NONE
+
+Outputs:
+  ApiUrl:
+    Description: Public Function URL for the orchestrator API
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl

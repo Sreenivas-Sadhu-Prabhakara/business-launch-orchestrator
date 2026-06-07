@@ -29,8 +29,8 @@ func TestCountryPipelines(t *testing.T) {
 			t.Fatalf("%s: no adapter registered", c)
 		}
 		plan := adapter.Plan()
-		if len(plan) != 7 {
-			t.Errorf("%s: expected 7 planned steps, got %d", c, len(plan))
+		if len(plan) != 11 {
+			t.Errorf("%s: expected 11 planned steps, got %d", c, len(plan))
 		}
 		b := sampleBusiness(c)
 		for _, p := range plan {

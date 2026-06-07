@@ -7,6 +7,20 @@ import (
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/domain"
 )
 
+// countryDisplay returns a human-readable jurisdiction name.
+func countryDisplay(c domain.Country) string {
+	switch c {
+	case domain.CountryIndia:
+		return "India"
+	case domain.CountryPhilippines:
+		return "Philippines"
+	case domain.CountryUS:
+		return "United States"
+	default:
+		return string(c)
+	}
+}
+
 // launchYear returns the incorporation year, defaulting to 2026 if unset.
 func launchYear(b domain.Business) int {
 	if y := b.CreatedAt.Year(); y >= 2000 {

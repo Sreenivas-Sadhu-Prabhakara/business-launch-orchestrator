@@ -23,11 +23,16 @@ services:
       PORT: "8080"
       DATABASE_URL: "postgres://postgres:postgres@db:5432/biz_launch?sslmode=disable"
       CORS_ORIGIN: "*"
+      DB_MAX_CONNS: "${DB_MAX_CONNS:-10}"
       # Payment sandbox keys — leave blank to use the deterministic mock.
       RAZORPAY_KEY_ID: "${RAZORPAY_KEY_ID:-}"
       RAZORPAY_KEY_SECRET: "${RAZORPAY_KEY_SECRET:-}"
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
       PAYMONGO_SECRET_KEY: "${PAYMONGO_SECRET_KEY:-}"
+      # AI strategy (Claude) + sanctions screening (trade.gov CSL).
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-claude-sonnet-4-6}"
+      CSL_API_KEY: "${CSL_API_KEY:-}"
       FORCE_MOCK: "${FORCE_MOCK:-false}"
     depends_on:
       db:

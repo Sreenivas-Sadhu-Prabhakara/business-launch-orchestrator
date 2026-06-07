@@ -46,7 +46,7 @@ export default function LaunchPage() {
     setBusy(true);
     setError("");
     try {
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 30; i++) {
         const res = await api.advance(id);
         await load();
         if (res.done) break;

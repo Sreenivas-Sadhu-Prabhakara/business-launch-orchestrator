@@ -20,27 +20,40 @@ import (
 //   - Compliance: EPFO + ESIC registration (also via SPICe+ AGILE-PRO)
 type indiaAdapter struct {
 	cfg Config
-	pay *paymentClients
+	cl  *clients
 }
 
 func (a *indiaAdapter) Country() domain.Country { return domain.CountryIndia }
 
 func (a *indiaAdapter) Plan() []domain.PlannedStep {
-	payMode := paymentMode(a.cfg, a.cfg.RazorpayKeyID != "" && a.cfg.RazorpayKeySecret != "")
+	payMode := modeFor(a.cfg, a.cfg.RazorpayKeyID != "" && a.cfg.RazorpayKeySecret != "")
 	return []domain.PlannedStep{
-		{Seq: 1, Type: domain.StepFounderKYC, Provider: "SurePass (PAN + Aadhaar)", Title: "Verify founder identity", Mode: domain.ModeMock},
-		{Seq: 2, Type: domain.StepNameCheck, Provider: "MCA RUN", Title: "Reserve company name", Mode: domain.ModeMock},
-		{Seq: 3, Type: domain.StepEntityReg, Provider: "MCA SPICe+ (INC-32)", Title: "Incorporate company (CIN)", Mode: domain.ModeMock},
-		{Seq: 4, Type: domain.StepTaxReg, Provider: "Income Tax + GSTN", Title: "Obtain PAN, TAN & GSTIN", Mode: domain.ModeMock},
-		{Seq: 5, Type: domain.StepBankAccount, Provider: "RazorpayX", Title: "Open current account", Mode: domain.ModeMock},
-		{Seq: 6, Type: domain.StepPaymentGateway, Provider: "Razorpay", Title: "Activate payment gateway", Mode: payMode},
-		{Seq: 7, Type: domain.StepCompliance, Provider: "EPFO + ESIC", Title: "Register for PF & ESI", Mode: domain.ModeMock},
+		{Seq: 1, Type: domain.StepStrategyCheck, Provider: "Claude (AI strategist)", Title: "Strategy & viability assessment", Mode: modeFor(a.cfg, a.cfg.AnthropicAPIKey != "")},
+		{Seq: 2, Type: domain.StepFounderKYC, Provider: "SurePass (PAN + Aadhaar)", Title: "Verify founder identity", Mode: domain.ModeMock},
+		{Seq: 3, Type: domain.StepLiabilitiesCheck, Provider: "trade.gov CSL + MCA/GST/CIBIL", Title: "Liabilities & sanctions screening", Mode: modeFor(a.cfg, a.cfg.CSLAPIKey != "")},
+		{Seq: 4, Type: domain.StepNameCheck, Provider: "MCA RUN", Title: "Reserve company name", Mode: domain.ModeMock},
+		{Seq: 5, Type: domain.StepIPCheck, Provider: "RDAP + IP India", Title: "Trademark & domain check", Mode: modeFor(a.cfg, true)},
+		{Seq: 6, Type: domain.StepEntityReg, Provider: "MCA SPICe+ (INC-32)", Title: "Incorporate company (CIN)", Mode: domain.ModeMock},
+		{Seq: 7, Type: domain.StepTaxReg, Provider: "Income Tax + GSTN", Title: "Obtain PAN, TAN & GSTIN", Mode: domain.ModeMock},
+		{Seq: 8, Type: domain.StepRegistrations, Provider: "Udyam + DGFT IEC + S&E", Title: "Licenses & registrations", Mode: domain.ModeMock},
+		{Seq: 9, Type: domain.StepBankAccount, Provider: "RazorpayX", Title: "Open current account", Mode: domain.ModeMock},
+		{Seq: 10, Type: domain.StepPaymentGateway, Provider: "Razorpay", Title: "Activate payment gateway", Mode: payMode},
+		{Seq: 11, Type: domain.StepCompliance, Provider: "EPFO + ESIC", Title: "Register for PF & ESI", Mode: domain.ModeMock},
 	}
 }
 
 func (a *indiaAdapter) Execute(ctx context.Context, step domain.StepType, b domain.Business) (domain.StepResult, error) {
 	year := launchYear(b)
 	switch step {
+	case domain.StepStrategyCheck:
+		return a.cl.strat.Assess(ctx, b)
+
+	case domain.StepLiabilitiesCheck:
+		return a.cl.liab.Screen(ctx, b)
+
+	case domain.StepIPCheck:
+		return a.cl.ip.Check(ctx, b)
+
 	case domain.StepFounderKYC:
 		return domain.StepResult{
 			ExternalRef: "kyc_" + digits("inkyc"+b.ID, 12),
@@ -79,6 +92,20 @@ func (a *indiaAdapter) Execute(ctx context.Context, step domain.StepType, b doma
 			Data:        map[string]any{"pan": pan, "tan": tan, "gstin": gstin},
 		}, nil
 
+	case domain.StepRegistrations:
+		udyam := "UDYAM-" + stateCode(b.Address.State, "KA") + "-00-" + digits("inudyam"+b.ID, 7)
+		return domain.StepResult{
+			ExternalRef: udyam,
+			Message:     "Sector licenses & registrations filed.",
+			Data: map[string]any{
+				"udyam_msme":          udyam,
+				"dgft_iec":            digits("iniec"+b.ID, 10),
+				"shops_establishment": "SE/" + digits("inse"+b.ID, 9),
+				"professional_tax":    "PT" + digits("inpt"+b.ID, 11),
+				"startup_india_dpiit": "DIPP" + digits("indpiit"+b.ID, 6),
+			},
+		}, nil
+
 	case domain.StepBankAccount:
 		acct := digits("inbank"+b.ID, 12)
 		return domain.StepResult{
@@ -88,7 +115,7 @@ func (a *indiaAdapter) Execute(ctx context.Context, step domain.StepType, b doma
 		}, nil
 
 	case domain.StepPaymentGateway:
-		return a.pay.Razorpay(ctx, b)
+		return a.cl.pay.Razorpay(ctx, b)
 
 	case domain.StepCompliance:
 		return domain.StepResult{

@@ -4,17 +4,19 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .
+# Bake the API URL at build time (client bundle). Override with --build-arg.
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
-# ---- run ----
+# ---- run (standalone, serverless-friendly) ----
 FROM node:22-alpine AS run
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/package-lock.json* ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/.next ./.next
+ENV PORT=3000
+# The standalone output is fully self-contained (server.js + minimal deps).
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
-COPY --from=build /app/next.config.mjs ./next.config.mjs
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]

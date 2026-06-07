@@ -33,13 +33,17 @@ func (c Country) Valid() bool {
 type StepType string
 
 const (
-	StepFounderKYC     StepType = "founder_kyc"
-	StepNameCheck      StepType = "name_check"
-	StepEntityReg      StepType = "entity_registration"
-	StepTaxReg         StepType = "tax_registration"
-	StepBankAccount    StepType = "bank_account"
-	StepPaymentGateway StepType = "payment_gateway"
-	StepCompliance     StepType = "compliance_registration"
+	StepStrategyCheck    StepType = "strategy_check"
+	StepFounderKYC       StepType = "founder_kyc"
+	StepLiabilitiesCheck StepType = "liabilities_check"
+	StepNameCheck        StepType = "name_check"
+	StepIPCheck          StepType = "ip_check"
+	StepEntityReg        StepType = "entity_registration"
+	StepTaxReg           StepType = "tax_registration"
+	StepRegistrations    StepType = "registrations"
+	StepBankAccount      StepType = "bank_account"
+	StepPaymentGateway   StepType = "payment_gateway"
+	StepCompliance       StepType = "compliance_registration"
 )
 
 // Step / business status values.
