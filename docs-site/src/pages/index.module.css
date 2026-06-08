@@ -159,8 +159,12 @@
   font-weight: 400;
   font-size: clamp(1.8rem, 3.5vw, 2.6rem);
   letter-spacing: -0.02em;
-  margin: 0 0 2.8rem;
+  margin: 0 0 0.9rem;
   color: var(--ink);
+}
+.sectionTitle em {
+  font-style: italic;
+  color: var(--bronze-deep);
 }
 
 /* ---------- flow (editorial phase index) ---------- */
@@ -238,5 +242,131 @@
   .stat + .stat {
     border-left: none;
     border-top: 1px solid var(--hair);
+  }
+}
+
+/* ---------- market selector ---------- */
+.selectLabel {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  color: var(--ink-soft);
+  margin-bottom: 0.9rem;
+}
+.marketSelect {
+  display: inline-flex;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 2.4rem;
+}
+.marketOpt {
+  appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--ifm-font-family-base);
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+  padding: 0.7rem 1.5rem;
+  transition: background 0.2s, color 0.2s;
+}
+.marketOpt + .marketOpt {
+  border-left: 1px solid var(--hair);
+}
+.marketOpt:hover {
+  color: var(--ink);
+  background: var(--hair-soft);
+}
+.marketActive,
+.marketActive:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- per-market flow ---------- */
+.flowSub {
+  color: var(--ink-soft);
+  font-size: 1.02rem;
+  margin: 0 0 2.4rem;
+  max-width: 38rem;
+}
+.phaseBlock {
+  margin-bottom: 0.4rem;
+}
+.phaseLabel {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: var(--bronze-deep);
+  padding: 1.7rem 0 0.3rem;
+}
+.stepRow {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  gap: 1.2rem;
+  align-items: baseline;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--hair);
+}
+.stepNum {
+  font-family: var(--ifm-heading-font-family);
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: var(--bronze);
+}
+.stepTitle {
+  font-family: var(--ifm-heading-font-family);
+  font-size: 1.2rem;
+  font-weight: 440;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.2rem;
+  color: var(--ink);
+}
+.stepProvider {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.stepMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  white-space: nowrap;
+}
+.stepOut {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.liveDot {
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--bronze-deep);
+  border: 1px solid rgba(154, 123, 75, 0.4);
+  border-radius: 999px;
+  padding: 0.14rem 0.55rem;
+}
+
+@media (max-width: 640px) {
+  .stepRow {
+    grid-template-columns: 2.2rem 1fr;
+  }
+  .stepMeta {
+    grid-column: 2;
+    justify-content: flex-start;
+    padding-top: 0.35rem;
+  }
+  .marketSelect {
+    display: flex;
+    width: 100%;
+  }
+  .marketOpt {
+    flex: 1;
+    padding: 0.7rem 0.6rem;
   }
 }
