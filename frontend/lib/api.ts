@@ -100,6 +100,10 @@ export interface AuthUser {
   role: "admin" | "user";
 }
 
+export interface AdminUser extends AuthUser {
+  created_at: string;
+}
+
 export const api = {
   // ---- auth ----
   me: () => req<AuthUser>("/api/v1/auth/me"),
@@ -111,6 +115,16 @@ export const api = {
     }),
 
   logout: () => req<{ ok: boolean }>("/api/v1/auth/logout", { method: "POST" }),
+
+  // ---- admin: users ----
+  listUsers: () =>
+    req<{ users: AdminUser[] }>("/api/v1/auth/users").then((d) => d.users),
+
+  createUser: (username: string, password: string, role: "admin" | "user") =>
+    req<AuthUser>("/api/v1/auth/users", {
+      method: "POST",
+      body: JSON.stringify({ username, password, role }),
+    }),
 
   listCountries: () =>
     req<{ countries: CountryInfo[] }>("/api/v1/countries").then((d) => d.countries),

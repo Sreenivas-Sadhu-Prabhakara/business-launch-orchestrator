@@ -44,6 +44,7 @@ func New(svc *orchestrator.Service, st *store.Store, authSvc *auth.Service, cors
 		r.Group(func(r chi.Router) {
 			r.Use(h.requireAuth)
 
+			r.With(h.requireAdmin).Get("/auth/users", h.listUsers)
 			r.With(h.requireAdmin).Post("/auth/users", h.createUser)
 
 			r.Get("/countries", h.listCountries)

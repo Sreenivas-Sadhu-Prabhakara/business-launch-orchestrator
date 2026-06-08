@@ -139,6 +139,16 @@ type createUserRequest struct {
 	Role     string `json:"role"`
 }
 
+// listUsers is the admin-only account list (password hashes are never returned).
+func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.store.ListUsers(r.Context())
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"users": users})
+}
+
 // createUser is admin-only account provisioning.
 func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 	var req createUserRequest

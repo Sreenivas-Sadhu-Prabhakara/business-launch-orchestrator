@@ -31,6 +31,14 @@ export function Nav({
               {l.label}
             </Link>
           ))}
+          {user?.role === "admin" && (
+            <Link
+              href="/admin/users"
+              className={path === "/admin/users" ? "active" : ""}
+            >
+              Users
+            </Link>
+          )}
           {user && (
             <span className="nav-user">
               {user.username}
