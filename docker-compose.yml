@@ -43,9 +43,15 @@ services:
       - "${API_PORT:-8080}:8080"
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # Same-origin: the browser calls /api/* and the Next server proxies it
+        # to the backend, so one public URL (a tunnel) works end-to-end.
+        NEXT_PUBLIC_API_URL: ""
+        BACKEND_ORIGIN: "http://backend:8080"
     environment:
-      NEXT_PUBLIC_API_URL: "http://localhost:8080"
+      BACKEND_ORIGIN: "http://backend:8080"
     depends_on:
       - backend
     ports:

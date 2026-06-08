@@ -4,9 +4,13 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .
-# Bake the API URL at build time (client bundle). Override with --build-arg.
-ARG NEXT_PUBLIC_API_URL=http://localhost:8080
+# Client API base — empty means same-origin (calls go to /api/* and are proxied
+# by the Next server to BACKEND_ORIGIN). Override with --build-arg.
+ARG NEXT_PUBLIC_API_URL=""
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Server-side proxy target, baked into the rewrites at build time.
+ARG BACKEND_ORIGIN=http://localhost:8080
+ENV BACKEND_ORIGIN=$BACKEND_ORIGIN
 RUN npm run build
 
 # ---- run (standalone, serverless-friendly) ----
