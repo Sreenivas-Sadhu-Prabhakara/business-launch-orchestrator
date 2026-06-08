@@ -30,6 +30,13 @@ type Config struct {
 	// trade.gov Consolidated Screening List API.
 	CSLAPIKey string
 
+	// Auth: JWT signing secret + seeded accounts.
+	JWTSecret     string
+	AdminUsername string
+	AdminPassword string
+	DemoUsername  string
+	DemoPassword  string
+
 	// ForceMock disables every live call (useful for offline demos / CI).
 	ForceMock bool
 }
@@ -50,6 +57,12 @@ func Load() Config {
 		AnthropicAPIKey: env("ANTHROPIC_API_KEY", ""),
 		AnthropicModel:  env("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
 		CSLAPIKey:       env("CSL_API_KEY", ""),
+
+		JWTSecret:     env("JWT_SECRET", "dev-insecure-secret-change-me"),
+		AdminUsername: env("ADMIN_USERNAME", "admin"),
+		AdminPassword: env("ADMIN_PASSWORD", "admin123"),
+		DemoUsername:  env("DEMO_USERNAME", "demo"),
+		DemoPassword:  env("DEMO_PASSWORD", "demo123"),
 
 		ForceMock: envBool("FORCE_MOCK", false),
 	}

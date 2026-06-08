@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { AuthUser } from "@/lib/api";
 
 const LINKS = [
   { href: "/", label: "Launch" },
@@ -9,7 +10,13 @@ const LINKS = [
   { href: "/deploy", label: "Deploy" },
 ];
 
-export function Nav() {
+export function Nav({
+  user,
+  onLogout,
+}: {
+  user?: AuthUser | null;
+  onLogout?: () => void;
+}) {
   const path = usePathname();
   return (
     <nav className="nav">
@@ -20,14 +27,21 @@ export function Nav() {
         </Link>
         <div className="nav-links">
           {LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={path === l.href ? "active" : ""}
-            >
+            <Link key={l.href} href={l.href} className={path === l.href ? "active" : ""}>
               {l.label}
             </Link>
           ))}
+          {user && (
+            <span className="nav-user">
+              {user.username}
+              <span className="nav-role">{user.role}</span>
+            </span>
+          )}
+          {onLogout && (
+            <button className="nav-logout" onClick={onLogout}>
+              Log out
+            </button>
+          )}
         </div>
       </div>
     </nav>

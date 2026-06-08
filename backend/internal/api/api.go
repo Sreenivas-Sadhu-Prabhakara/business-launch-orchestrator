@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/auth"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/orchestrator"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/store"
 )
@@ -16,12 +17,13 @@ import (
 type Handler struct {
 	svc        *orchestrator.Service
 	store      *store.Store
+	auth       *auth.Service
 	corsOrigin string
 }
 
 // New builds the chi router with all routes mounted.
-func New(svc *orchestrator.Service, st *store.Store, corsOrigin string) http.Handler {
-	h := &Handler{svc: svc, store: st, corsOrigin: corsOrigin}
+func New(svc *orchestrator.Service, st *store.Store, authSvc *auth.Service, corsOrigin string) http.Handler {
+	h := &Handler{svc: svc, store: st, auth: authSvc, corsOrigin: corsOrigin}
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -33,16 +35,28 @@ func New(svc *orchestrator.Service, st *store.Store, corsOrigin string) http.Han
 	r.Get("/healthz", h.health)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/countries", h.listCountries)
-		r.Get("/countries/{code}/plan", h.countryPlan)
+		// Public auth endpoints.
+		r.Post("/auth/login", h.login)
+		r.Post("/auth/logout", h.logout)
+		r.Get("/auth/me", h.me)
 
-		r.Route("/businesses", func(r chi.Router) {
-			r.Post("/", h.createBusiness)
-			r.Get("/", h.listBusinesses)
-			r.Get("/{id}", h.getBusiness)
-			r.Get("/{id}/steps", h.getSteps)
-			r.Post("/{id}/advance", h.advance)
-			r.Post("/{id}/run", h.runAll)
+		// Everything else requires a valid session.
+		r.Group(func(r chi.Router) {
+			r.Use(h.requireAuth)
+
+			r.With(h.requireAdmin).Post("/auth/users", h.createUser)
+
+			r.Get("/countries", h.listCountries)
+			r.Get("/countries/{code}/plan", h.countryPlan)
+
+			r.Route("/businesses", func(r chi.Router) {
+				r.Post("/", h.createBusiness)
+				r.Get("/", h.listBusinesses)
+				r.Get("/{id}", h.getBusiness)
+				r.Get("/{id}/steps", h.getSteps)
+				r.Post("/{id}/advance", h.advance)
+				r.Post("/{id}/run", h.runAll)
+			})
 		})
 	})
 

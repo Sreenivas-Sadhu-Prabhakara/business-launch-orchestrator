@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/api"
+	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/auth"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/config"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/orchestrator"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/providers"
@@ -35,6 +36,12 @@ func main() {
 	}
 	log.Println("migrations applied")
 
+	authSvc := auth.New(cfg.JWTSecret, 24*time.Hour)
+	if cfg.JWTSecret == "dev-insecure-secret-change-me" {
+		log.Println("WARNING: using the default JWT secret — set JWT_SECRET for production")
+	}
+	seedUsers(ctx, st, cfg)
+
 	reg := providers.NewRegistry(providers.Config{
 		RazorpayKeyID:     cfg.RazorpayKeyID,
 		RazorpayKeySecret: cfg.RazorpayKeySecret,
@@ -46,7 +53,7 @@ func main() {
 		ForceMock:         cfg.ForceMock,
 	})
 	svc := orchestrator.New(st, reg)
-	handler := api.New(svc, st, cfg.CORSOrigin)
+	handler := api.New(svc, st, authSvc, cfg.CORSOrigin)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
@@ -66,6 +73,30 @@ func main() {
 	shutdownCtx, shCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shCancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// seedUsers ensures the configured admin + demo accounts exist (idempotent).
+func seedUsers(ctx context.Context, st *store.Store, cfg config.Config) {
+	ensure := func(username, password, role string) {
+		if username == "" || password == "" {
+			return
+		}
+		hash, err := auth.HashPassword(password)
+		if err != nil {
+			log.Printf("seed %q: hash error: %v", username, err)
+			return
+		}
+		created, err := st.EnsureUser(ctx, username, hash, role)
+		if err != nil {
+			log.Printf("seed %q: %v", username, err)
+			return
+		}
+		if created {
+			log.Printf("seeded %s account %q", role, username)
+		}
+	}
+	ensure(cfg.AdminUsername, cfg.AdminPassword, auth.RoleAdmin)
+	ensure(cfg.DemoUsername, cfg.DemoPassword, auth.RoleUser)
 }
 
 func connectWithRetry(ctx context.Context, url string, maxConns, attempts int, delay time.Duration) (*store.Store, error) {

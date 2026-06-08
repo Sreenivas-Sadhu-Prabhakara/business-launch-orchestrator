@@ -8,10 +8,32 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/auth"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/domain"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/orchestrator"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/store"
 )
+
+// loadOwned fetches a business and enforces access: admins see all, other users
+// only their own. Returns false (and writes the response) if not allowed.
+func (h *Handler) loadOwned(w http.ResponseWriter, r *http.Request, id string) (*domain.Business, bool) {
+	b, err := h.store.GetBusiness(r.Context(), id)
+	if errors.Is(err, store.ErrNotFound) {
+		writeErr(w, http.StatusNotFound, "business not found")
+		return nil, false
+	}
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return nil, false
+	}
+	u := currentUser(r.Context())
+	if u == nil || (u.Role != auth.RoleAdmin && b.OwnerID != u.ID) {
+		// Hide existence from non-owners.
+		writeErr(w, http.StatusNotFound, "business not found")
+		return nil, false
+	}
+	return b, true
+}
 
 func (h *Handler) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -87,6 +109,10 @@ func (h *Handler) createBusiness(w http.ResponseWriter, r *http.Request) {
 		Address:         req.Address,
 	}
 
+	if u := currentUser(r.Context()); u != nil {
+		b.OwnerID = u.ID
+	}
+
 	if err := h.svc.CreateLaunch(r.Context(), b); err != nil {
 		if errors.Is(err, orchestrator.ErrUnsupportedCountry) {
 			writeErr(w, http.StatusBadRequest, "unsupported country (use IN, PH or US)")
@@ -100,7 +126,11 @@ func (h *Handler) createBusiness(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) listBusinesses(w http.ResponseWriter, r *http.Request) {
-	items, err := h.store.ListBusinesses(r.Context(), 50)
+	owner := "" // admin: all
+	if u := currentUser(r.Context()); u != nil && u.Role != auth.RoleAdmin {
+		owner = u.ID
+	}
+	items, err := h.store.ListBusinesses(r.Context(), owner, 50)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
@@ -109,11 +139,19 @@ func (h *Handler) listBusinesses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getBusiness(w http.ResponseWriter, r *http.Request) {
-	h.respondWithDetail(w, r.Context(), http.StatusOK, chi.URLParam(r, "id"))
+	id := chi.URLParam(r, "id")
+	if _, ok := h.loadOwned(w, r, id); !ok {
+		return
+	}
+	h.respondWithDetail(w, r.Context(), http.StatusOK, id)
 }
 
 func (h *Handler) getSteps(w http.ResponseWriter, r *http.Request) {
-	steps, err := h.store.GetSteps(r.Context(), chi.URLParam(r, "id"))
+	id := chi.URLParam(r, "id")
+	if _, ok := h.loadOwned(w, r, id); !ok {
+		return
+	}
+	steps, err := h.store.GetSteps(r.Context(), id)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
@@ -123,6 +161,9 @@ func (h *Handler) getSteps(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) advance(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if _, ok := h.loadOwned(w, r, id); !ok {
+		return
+	}
 	step, err := h.svc.AdvanceOne(r.Context(), id)
 	switch {
 	case errors.Is(err, orchestrator.ErrNoPendingSteps):
@@ -138,6 +179,9 @@ func (h *Handler) advance(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) runAll(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if _, ok := h.loadOwned(w, r, id); !ok {
+		return
+	}
 	if _, err := h.svc.RunAll(r.Context(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			writeErr(w, http.StatusNotFound, "business not found")

@@ -78,6 +78,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    credentials: "include",
     cache: "no-store",
   });
   if (!res.ok) {
@@ -93,7 +94,24 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface AuthUser {
+  id: string;
+  username: string;
+  role: "admin" | "user";
+}
+
 export const api = {
+  // ---- auth ----
+  me: () => req<AuthUser>("/api/v1/auth/me"),
+
+  login: (username: string, password: string) =>
+    req<AuthUser>("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
+
+  logout: () => req<{ ok: boolean }>("/api/v1/auth/logout", { method: "POST" }),
+
   listCountries: () =>
     req<{ countries: CountryInfo[] }>("/api/v1/countries").then((d) => d.countries),
 

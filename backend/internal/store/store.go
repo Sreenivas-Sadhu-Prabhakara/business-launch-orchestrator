@@ -75,26 +75,96 @@ func (s *Store) CreateBusiness(ctx context.Context, b *domain.Business) error {
 	const q = `
 		INSERT INTO businesses
 			(id, country, entity_type, legal_name, founder_name, founder_email,
-			 founder_phone, founder_id_number, address, status)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			 founder_phone, founder_id_number, address, status, owner_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 		RETURNING created_at, updated_at`
 	return s.pool.QueryRow(ctx, q,
 		b.ID, b.Country, b.EntityType, b.LegalName, b.FounderName, b.FounderEmail,
-		b.FounderPhone, b.FounderIDNumber, addr, b.Status,
+		b.FounderPhone, b.FounderIDNumber, addr, b.Status, nullableUUID(b.OwnerID),
 	).Scan(&b.CreatedAt, &b.UpdatedAt)
+}
+
+// nullableUUID returns nil for an empty id so it inserts SQL NULL.
+func nullableUUID(id string) any {
+	if id == "" {
+		return nil
+	}
+	return id
+}
+
+// User is an authenticated account.
+type User struct {
+	ID           string    `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"-"`
+	Role         string    `json:"role"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// EnsureUser inserts a user if the username does not already exist (idempotent
+// seeding). Returns true if a row was created.
+func (s *Store) EnsureUser(ctx context.Context, username, passwordHash, role string) (bool, error) {
+	tag, err := s.pool.Exec(ctx, `
+		INSERT INTO users (id, username, password_hash, role)
+		VALUES ($1,$2,$3,$4)
+		ON CONFLICT (username) DO NOTHING`,
+		uuid.NewString(), username, passwordHash, role)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
+// CreateUser inserts a new user, failing if the username is taken.
+func (s *Store) CreateUser(ctx context.Context, username, passwordHash, role string) (*User, error) {
+	u := &User{ID: uuid.NewString(), Username: username, PasswordHash: passwordHash, Role: role}
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO users (id, username, password_hash, role)
+		VALUES ($1,$2,$3,$4) RETURNING created_at`,
+		u.ID, u.Username, u.PasswordHash, u.Role).Scan(&u.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+// GetUserByUsername looks up a user for login.
+func (s *Store) GetUserByUsername(ctx context.Context, username string) (*User, error) {
+	return s.scanUser(s.pool.QueryRow(ctx,
+		`SELECT id, username, password_hash, role, created_at FROM users WHERE username=$1`, username))
+}
+
+// GetUserByID looks up a user by id (used to validate a session).
+func (s *Store) GetUserByID(ctx context.Context, id string) (*User, error) {
+	return s.scanUser(s.pool.QueryRow(ctx,
+		`SELECT id, username, password_hash, role, created_at FROM users WHERE id=$1`, id))
+}
+
+func (s *Store) scanUser(row pgx.Row) (*User, error) {
+	var u User
+	err := row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Role, &u.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
 }
 
 // GetBusiness fetches a single business by id.
 func (s *Store) GetBusiness(ctx context.Context, id string) (*domain.Business, error) {
 	const q = `
-		SELECT id, country, entity_type, legal_name, founder_name, founder_email,
-		       founder_phone, founder_id_number, address, status, created_at, updated_at
+		SELECT id, COALESCE(owner_id::text, ''), country, entity_type, legal_name,
+		       founder_name, founder_email, founder_phone, founder_id_number,
+		       address, status, created_at, updated_at
 		FROM businesses WHERE id = $1`
 	var b domain.Business
 	var addr []byte
 	err := s.pool.QueryRow(ctx, q, id).Scan(
-		&b.ID, &b.Country, &b.EntityType, &b.LegalName, &b.FounderName, &b.FounderEmail,
-		&b.FounderPhone, &b.FounderIDNumber, &addr, &b.Status, &b.CreatedAt, &b.UpdatedAt,
+		&b.ID, &b.OwnerID, &b.Country, &b.EntityType, &b.LegalName, &b.FounderName,
+		&b.FounderEmail, &b.FounderPhone, &b.FounderIDNumber, &addr, &b.Status,
+		&b.CreatedAt, &b.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -106,16 +176,28 @@ func (s *Store) GetBusiness(ctx context.Context, id string) (*domain.Business, e
 	return &b, nil
 }
 
-// ListBusinesses returns the most recent launches.
-func (s *Store) ListBusinesses(ctx context.Context, limit int) ([]domain.Business, error) {
+// ListBusinesses returns recent launches. When ownerID is non-empty, only that
+// owner's launches are returned (used to scope non-admin users); empty returns all.
+func (s *Store) ListBusinesses(ctx context.Context, ownerID string, limit int) ([]domain.Business, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	const q = `
-		SELECT id, country, entity_type, legal_name, founder_name, founder_email,
-		       founder_phone, founder_id_number, address, status, created_at, updated_at
-		FROM businesses ORDER BY created_at DESC LIMIT $1`
-	rows, err := s.pool.Query(ctx, q, limit)
+	q := `
+		SELECT id, COALESCE(owner_id::text, ''), country, entity_type, legal_name,
+		       founder_name, founder_email, founder_phone, founder_id_number,
+		       address, status, created_at, updated_at
+		FROM businesses`
+	args := []any{}
+	if ownerID != "" {
+		q += ` WHERE owner_id = $1`
+		args = append(args, ownerID)
+		q += ` ORDER BY created_at DESC LIMIT $2`
+		args = append(args, limit)
+	} else {
+		q += ` ORDER BY created_at DESC LIMIT $1`
+		args = append(args, limit)
+	}
+	rows, err := s.pool.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +208,9 @@ func (s *Store) ListBusinesses(ctx context.Context, limit int) ([]domain.Busines
 		var b domain.Business
 		var addr []byte
 		if err := rows.Scan(
-			&b.ID, &b.Country, &b.EntityType, &b.LegalName, &b.FounderName, &b.FounderEmail,
-			&b.FounderPhone, &b.FounderIDNumber, &addr, &b.Status, &b.CreatedAt, &b.UpdatedAt,
+			&b.ID, &b.OwnerID, &b.Country, &b.EntityType, &b.LegalName, &b.FounderName,
+			&b.FounderEmail, &b.FounderPhone, &b.FounderIDNumber, &addr, &b.Status,
+			&b.CreatedAt, &b.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

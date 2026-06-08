@@ -75,6 +75,7 @@ type Address struct {
 // Business is a single end-to-end launch application.
 type Business struct {
 	ID              string    `json:"id"`
+	OwnerID         string    `json:"owner_id,omitempty"`
 	Country         Country   `json:"country"`
 	EntityType      string    `json:"entity_type"`
 	LegalName       string    `json:"legal_name"`

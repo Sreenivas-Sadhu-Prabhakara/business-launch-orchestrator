@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
-import { Nav } from "@/components/Nav";
+import { AuthGate } from "@/components/AuthGate";
 
 const display = Fraunces({
   subsets: ["latin"],
@@ -32,8 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${display.variable} ${body.variable}`}>
-        <Nav />
-        {children}
+        <AuthGate>{children}</AuthGate>
       </body>
     </html>
   );
