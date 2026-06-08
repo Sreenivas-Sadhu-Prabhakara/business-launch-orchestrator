@@ -3,7 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/auth"
 	"github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator/backend/internal/store"
@@ -175,4 +178,59 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, toUserResponse(u))
+}
+
+type roleRequest struct {
+	Role string `json:"role"`
+}
+
+// updateUserRole changes another user's role (admin-only). You cannot change
+// your own role, which prevents an admin locking themselves out.
+func (h *Handler) updateUserRole(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if u := currentUser(r.Context()); u != nil && u.ID == id {
+		writeErr(w, http.StatusBadRequest, "you cannot change your own role")
+		return
+	}
+	var req roleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if req.Role != auth.RoleAdmin && req.Role != auth.RoleUser {
+		writeErr(w, http.StatusBadRequest, "role must be 'admin' or 'user'")
+		return
+	}
+	if err := h.store.UpdateUserRole(r.Context(), id, req.Role); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeErr(w, http.StatusNotFound, "user not found")
+			return
+		}
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	u, err := h.store.GetUserByID(r.Context(), id)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, toUserResponse(u))
+}
+
+// deleteUser removes another account (admin-only). You cannot delete yourself.
+func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if u := currentUser(r.Context()); u != nil && u.ID == id {
+		writeErr(w, http.StatusBadRequest, "you cannot delete your own account")
+		return
+	}
+	if err := h.store.DeleteUser(r.Context(), id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeErr(w, http.StatusNotFound, "user not found")
+			return
+		}
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

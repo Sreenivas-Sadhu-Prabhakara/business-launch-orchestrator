@@ -49,6 +49,37 @@ export default function AdminUsers() {
     }
   };
 
+  const [rowBusy, setRowBusy] = useState("");
+  const [rowErr, setRowErr] = useState("");
+
+  const changeRole = async (u: AdminUser) => {
+    const next = u.role === "admin" ? "user" : "admin";
+    setRowBusy(u.id);
+    setRowErr("");
+    try {
+      await api.updateUserRole(u.id, next);
+      await loadUsers();
+    } catch (e) {
+      setRowErr((e as Error).message);
+    } finally {
+      setRowBusy("");
+    }
+  };
+
+  const removeUser = async (u: AdminUser) => {
+    if (!window.confirm(`Delete “${u.username}”? This cannot be undone.`)) return;
+    setRowBusy(u.id);
+    setRowErr("");
+    try {
+      await api.deleteUser(u.id);
+      await loadUsers();
+    } catch (e) {
+      setRowErr((e as Error).message);
+    } finally {
+      setRowBusy("");
+    }
+  };
+
   if (!ready) {
     return (
       <main className="container">
@@ -126,6 +157,7 @@ export default function AdminUsers() {
       </form>
 
       <div className="section-title">All accounts ({users.length})</div>
+      {rowErr && <div className="error">{rowErr}</div>}
       {listErr ? (
         <div className="error">{listErr}</div>
       ) : (
@@ -135,21 +167,50 @@ export default function AdminUsers() {
               <th>Username</th>
               <th>Role</th>
               <th>Created</th>
+              <th style={{ textAlign: "right" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>
-                  {u.username}
-                  {u.id === me.id ? <span className="muted"> · you</span> : null}
-                </td>
-                <td>
-                  <span className="nav-role">{u.role}</span>
-                </td>
-                <td className="muted">{new Date(u.created_at).toLocaleString()}</td>
-              </tr>
-            ))}
+            {users.map((u) => {
+              const self = u.id === me.id;
+              const working = rowBusy === u.id;
+              return (
+                <tr key={u.id}>
+                  <td>
+                    {u.username}
+                    {self ? <span className="muted"> · you</span> : null}
+                  </td>
+                  <td>
+                    <span className="nav-role">{u.role}</span>
+                  </td>
+                  <td className="muted">{new Date(u.created_at).toLocaleString()}</td>
+                  <td>
+                    {self ? (
+                      <span className="muted" style={{ display: "block", textAlign: "right" }}>—</span>
+                    ) : (
+                      <div className="row-actions">
+                        <button
+                          className="act"
+                          disabled={working}
+                          onClick={() => changeRole(u)}
+                          title={`Change role to ${u.role === "admin" ? "user" : "admin"}`}
+                        >
+                          {working ? <span className="spin" /> : null}
+                          {u.role === "admin" ? "Make user" : "Make admin"}
+                        </button>
+                        <button
+                          className="act danger"
+                          disabled={working}
+                          onClick={() => removeUser(u)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

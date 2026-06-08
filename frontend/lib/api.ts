@@ -126,6 +126,15 @@ export const api = {
       body: JSON.stringify({ username, password, role }),
     }),
 
+  updateUserRole: (id: string, role: "admin" | "user") =>
+    req<AuthUser>(`/api/v1/auth/users/${id}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+
+  deleteUser: (id: string) =>
+    req<{ ok: boolean }>(`/api/v1/auth/users/${id}`, { method: "DELETE" }),
+
   listCountries: () =>
     req<{ countries: CountryInfo[] }>("/api/v1/countries").then((d) => d.countries),
 

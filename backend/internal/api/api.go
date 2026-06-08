@@ -46,6 +46,8 @@ func New(svc *orchestrator.Service, st *store.Store, authSvc *auth.Service, cors
 
 			r.With(h.requireAdmin).Get("/auth/users", h.listUsers)
 			r.With(h.requireAdmin).Post("/auth/users", h.createUser)
+			r.With(h.requireAdmin).Patch("/auth/users/{id}/role", h.updateUserRole)
+			r.With(h.requireAdmin).Delete("/auth/users/{id}", h.deleteUser)
 
 			r.Get("/countries", h.listCountries)
 			r.Get("/countries/{code}/plan", h.countryPlan)
