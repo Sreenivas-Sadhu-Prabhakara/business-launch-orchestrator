@@ -35,6 +35,25 @@ const config: Config = {
     locales: ["en"],
   },
 
+  headTags: [
+    {
+      tagName: "link",
+      attributes: { rel: "preconnect", href: "https://fonts.googleapis.com" },
+    },
+    {
+      tagName: "link",
+      attributes: {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossorigin: "anonymous",
+      },
+    },
+  ],
+
+  stylesheets: [
+    "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Hanken+Grotesk:wght@400..700&display=swap",
+  ],
+
   customFields: {
     requestAccessUrl: REQUEST_ACCESS_URL,
     githubUrl: GITHUB_URL,
@@ -60,7 +79,7 @@ const config: Config = {
   themeConfig: {
     image: "img/docusaurus-social-card.jpg",
     colorMode: {
-      defaultMode: "dark",
+      defaultMode: "light",
       respectPrefersColorScheme: true,
     },
     navbar: {

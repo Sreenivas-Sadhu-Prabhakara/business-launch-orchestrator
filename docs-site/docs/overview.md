@@ -34,8 +34,8 @@ them as **one resumable pipeline** with a clear status for every step.
 ## The pipeline at a glance
 
 ```
-🧭 Strategy → 🪪 KYC → ⚖️ Liabilities → 📝 Name → 🔎 IP →
-🏢 Incorporation → 🧾 Tax → 📜 Registrations → 🏦 Banking → 💸 Payments → 👥 Compliance
+Strategy → KYC → Liabilities → Name → IP → Incorporation →
+Tax → Registrations → Banking → Payments → Compliance
 ```
 
 See **[The 11-step flow](./the-flow.md)** for what each step does, and

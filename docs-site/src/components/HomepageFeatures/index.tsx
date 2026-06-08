@@ -1,81 +1,69 @@
 import type { ReactNode } from "react";
-import clsx from "clsx";
 import Heading from "@theme/Heading";
 import styles from "./styles.module.css";
 
 type FeatureItem = {
-  icon: string;
+  n: string;
   title: string;
   description: ReactNode;
 };
 
 const FeatureList: FeatureItem[] = [
   {
-    icon: "🔀",
+    n: "01",
     title: "One flow, three countries",
-    description: (
-      <>The same 11-step pipeline maps to each jurisdiction&apos;s real agencies through pluggable adapters.</>
-    ),
+    description:
+      "The same eleven-step pipeline maps to each jurisdiction's real agencies through pluggable adapters.",
   },
   {
-    icon: "🧠",
+    n: "02",
     title: "AI-led strategy",
-    description: (
-      <>A Claude assessment opens the flow so structure, jurisdiction and risk are decided with evidence.</>
-    ),
+    description:
+      "A Claude assessment opens the flow, so structure, jurisdiction and risk are decided with evidence.",
   },
   {
-    icon: "🔌",
+    n: "03",
     title: "Hybrid integrations",
-    description: (
-      <>Payments, AI and domain checks hit real services; government/KYC steps are mocks you swap for live APIs.</>
-    ),
+    description:
+      "Payments, AI and domain checks call real services; government and KYC steps are mocks you swap for live APIs.",
   },
   {
-    icon: "⏯️",
-    title: "Resumable state machine",
-    description: (
-      <>Every step&apos;s request, response and reference is persisted. Advance one step, run all, or resume on failure.</>
-    ),
+    n: "04",
+    title: "Resumable by design",
+    description:
+      "Every step's request, response and reference is persisted. Advance one step, run all, or resume after a failure.",
   },
   {
-    icon: "☁️",
+    n: "05",
     title: "Serverless-first",
-    description: (
-      <>Runs on Lambda (Web Adapter), Cloud Run or Container Apps with a serverless Postgres. Scales to zero.</>
-    ),
+    description:
+      "Runs on Lambda, Cloud Run or Container Apps with a serverless Postgres. Scales to zero.",
   },
   {
-    icon: "🧱",
-    title: "Self-updating UI",
-    description: (
-      <>The wizard renders whatever the API plan returns — add a step or country and the UI updates itself.</>
-    ),
+    n: "06",
+    title: "A self-updating interface",
+    description:
+      "The wizard renders whatever the API plan returns — add a step or a country and the UI follows.",
   },
 ];
-
-function Feature({ icon, title, description }: FeatureItem) {
-  return (
-    <div className={clsx("col col--4")}>
-      <div className={styles.card}>
-        <div className={styles.icon}>{icon}</div>
-        <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function HomepageFeatures(): ReactNode {
   return (
     <section className={styles.features}>
-      <div className="container">
-        <Heading as="h2" className={styles.sectionTitle}>
-          Why it&apos;s built this way
+      <div className={styles.inner}>
+        <div className={styles.label}>Principles</div>
+        <Heading as="h2" className={styles.title}>
+          Considered, not assembled
         </Heading>
-        <div className="row">
-          {FeatureList.map((props, idx) => (
-            <Feature key={idx} {...props} />
+        <div className={styles.grid}>
+          {FeatureList.map((f) => (
+            <div className={styles.card} key={f.n}>
+              <div className={styles.num}>{f.n}</div>
+              <Heading as="h3" className={styles.cardTitle}>
+                {f.title}
+              </Heading>
+              <p className={styles.cardBody}>{f.description}</p>
+            </div>
           ))}
         </div>
       </div>

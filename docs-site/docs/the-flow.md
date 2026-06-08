@@ -9,7 +9,7 @@ Every launch runs the same eleven logical steps, grouped into five phases. The
 orchestrator executes them in order, persisting each result so the launch can be
 advanced one step at a time or run straight through.
 
-## 🧭 Phase 1 — Decide
+## Phase 1 — Decide
 
 ### 1. Strategy & viability assessment
 An AI strategist (Claude) analyses the jurisdiction, the proposed entity type,
@@ -17,7 +17,7 @@ the top regulatory & tax risks, and a 90-day go-to-market, then returns a
 **0–100 viability score**. This shapes every decision after it.
 *Live when an Anthropic key is set; deterministic mock otherwise.*
 
-## 🛡️ Phase 2 — Verify the founder
+## Phase 2 — Verify the founder
 
 ### 2. Founder KYC
 Government-ID identity verification — PAN + Aadhaar (IN), PhilID (PH), or a
@@ -29,7 +29,7 @@ director-disqualification, litigation, lien and tax-defaulter checks. Surfaces
 risk before any money or filing is committed.
 *Sanctions list is live when a CSL key is set.*
 
-## ™️ Phase 3 — Secure the brand
+## Phase 3 — Secure the brand
 
 ### 4. Name reservation
 Reserve the corporate name with the registry — MCA RUN (IN), SEC (PH),
@@ -40,7 +40,7 @@ Secretary of State (US).
 conflict search against IP India / IPOPHL / USPTO. Catches a name clash before it
 becomes expensive.
 
-## 🏛️ Phase 4 — Form the entity
+## Phase 4 — Form the entity
 
 ### 6. Incorporation
 File the company and receive its identifier — **CIN** (IN), **SEC registration
@@ -55,7 +55,7 @@ Sector and statutory registrations beyond incorporation — Udyam / IEC / Shops 
 Establishment (IN), Mayor's & Barangay permits (PH), state license + **FinCEN
 BOI** report (US).
 
-## 💳 Phase 5 — Go operational
+## Phase 5 — Go operational
 
 ### 9. Business bank account
 Open a current/checking account — RazorpayX (IN), UnionBank (PH), Mercury (US).
