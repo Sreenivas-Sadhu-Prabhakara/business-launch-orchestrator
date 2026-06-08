@@ -49,7 +49,7 @@ multiple markets.
 
 :::note Concept testing
 This site documents the concept and the working reference implementation. If the
-problem resonates, **[request access](https://tally.so/r/REPLACE_WITH_YOUR_FORM_ID)**
+problem resonates, **[request access](https://docs.google.com/forms/d/e/1FAIpQLSdB6WkNa1itYFSBwoAbvzFLrgn5ExsiblC-NviUhET78kU0zQ/viewform)**
 — we're validating which markets and steps matter most.
 :::
 

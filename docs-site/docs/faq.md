@@ -40,5 +40,5 @@ Serverless on AWS Lambda, GCP Cloud Run or Azure Container Apps with a serverles
 Postgres. See **[Deploy serverless](./deploy-serverless.md)**.
 
 ### How can I follow along or give feedback?
-**[Request access / share feedback](https://tally.so/r/REPLACE_WITH_YOUR_FORM_ID)**
+**[Request access / share feedback](https://docs.google.com/forms/d/e/1FAIpQLSdB6WkNa1itYFSBwoAbvzFLrgn5ExsiblC-NviUhET78kU0zQ/viewform)**
 — we're concept-testing which markets and steps matter most.

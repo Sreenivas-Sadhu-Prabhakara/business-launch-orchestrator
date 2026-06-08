@@ -6,7 +6,8 @@ import type * as Preset from "@docusaurus/preset-classic";
 
 // 🔧 Concept-test CTA target. Swap this for your real form (Tally / Google Form
 // / Typeform). Used by the navbar button, the landing hero and the footer.
-const REQUEST_ACCESS_URL = "https://tally.so/r/REPLACE_WITH_YOUR_FORM_ID";
+const REQUEST_ACCESS_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSdB6WkNa1itYFSBwoAbvzFLrgn5ExsiblC-NviUhET78kU0zQ/viewform";
 const GITHUB_URL =
   "https://github.com/Sreenivas-Sadhu-Prabhakara/business-launch-orchestrator";
 
