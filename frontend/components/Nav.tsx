@@ -15,7 +15,7 @@ export function Nav() {
     <nav className="nav">
       <div className="nav-inner">
         <Link href="/" className="nav-brand">
-          <span className="logo" style={{ display: "grid", placeItems: "center", background: "linear-gradient(135deg,#6d8bff,#8b5cf6)" }}>🚀</span>
+          <span className="logo">◆</span>
           Launch Orchestrator
         </Link>
         <div className="nav-links">

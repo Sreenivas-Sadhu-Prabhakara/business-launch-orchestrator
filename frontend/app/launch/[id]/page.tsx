@@ -80,7 +80,7 @@ export default function LaunchPage() {
   return (
     <main className="container">
       <div className="brand">
-        <div className="logo">🚀</div>
+        <div className="logo">◆</div>
         <h1>{business.legal_name}</h1>
       </div>
       <p className="subtitle">
@@ -96,8 +96,8 @@ export default function LaunchPage() {
       </p>
 
       {allDone && (
-        <div className="card" style={{ marginBottom: 18, borderColor: "var(--green)" }}>
-          <h3 style={{ marginTop: 0 }}>🎉 Business launched</h3>
+        <div className="card" style={{ marginBottom: 18, borderColor: "var(--ok)" }}>
+          <h3 style={{ marginTop: 0 }}>Business launched</h3>
           <p className="muted">All government, banking and payment steps completed. Key references:</p>
           <div className="kv">
             {completedRefs.map((s) => (
@@ -113,13 +113,13 @@ export default function LaunchPage() {
         <StepList steps={steps} />
         {error && <div className="error">{error}</div>}
         <div className="actions">
-          <Link href="/" className="btn secondary">＋ New launch</Link>
+          <Link href="/" className="btn secondary">New launch</Link>
           <div style={{ display: "flex", gap: 12 }}>
             <button className="btn secondary" onClick={advanceOne} disabled={busy || allDone}>
-              {busy ? <span className="spin" /> : "▶"} Run next step
+              {busy ? <span className="spin" /> : null} Run next step
             </button>
             <button className="btn" onClick={runAll} disabled={busy || allDone}>
-              {busy ? <span className="spin" /> : "⏩"} Run all steps
+              {busy ? <span className="spin" /> : null} Run all steps
             </button>
           </div>
         </div>

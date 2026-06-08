@@ -12,15 +12,13 @@ import {
   type CreateBusinessInput,
 } from "@/lib/api";
 
-const FLAGS: Record<CountryCode, string> = { IN: "🇮🇳", PH: "🇵🇭", US: "🇺🇸" };
-
 const ENTITY_TYPES: Record<CountryCode, string[]> = {
   IN: ["Private Limited Company", "LLP", "One Person Company", "Sole Proprietorship"],
   US: ["LLC", "C-Corp", "S-Corp"],
   PH: ["Domestic Corporation", "One Person Corporation", "Partnership", "Sole Proprietorship"],
 };
 
-const WIZARD = ["Jurisdiction", "Founder & company", "Review & launch"];
+const WIZARD = ["Market", "Founder & company", "Review & launch"];
 
 export default function Home() {
   const router = useRouter();
@@ -90,21 +88,24 @@ export default function Home() {
   return (
     <main className="container">
       <div className="brand">
-        <div className="logo">🚀</div>
+        <div className="logo">◆</div>
         <h1>Business Launch Orchestrator</h1>
       </div>
       <p className="subtitle">
         Strategy, KYC, liabilities, IP, incorporation, tax, registrations, banking,
-        payments and compliance — across India, the Philippines and the US — from one flow.{" "}
-        <Link href="/how-it-works">See how it works →</Link>
+        payments and compliance — across India, the Philippines and the United States,
+        from one considered flow. <Link href="/how-it-works">See how it works →</Link>
       </p>
 
       <Stepper steps={WIZARD} current={phase} />
 
-      {/* Phase 0 — choose jurisdiction */}
+      {/* Phase 0 — choose market */}
       {phase === 0 && (
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Where are you launching?</h3>
+          <p className="muted" style={{ marginTop: 4, marginBottom: 22 }}>
+            Choose your market — the entire flow aligns to its agencies and identifiers.
+          </p>
           <div className="grid">
             {(["IN", "PH", "US"] as CountryCode[]).map((c) => {
               const info = countries.find((x) => x.code === c);
@@ -114,13 +115,9 @@ export default function Home() {
                   className={`country-card ${country === c ? "selected" : ""}`}
                   onClick={() => selectCountry(c)}
                 >
-                  <div className="flag">{FLAGS[c]}</div>
                   <div className="name">{info?.name ?? c}</div>
                   <div className="meta">
-                    {(info?.plan.length ?? 7)} steps ·{" "}
-                    {info?.plan.some((s) => s.mode === "live")
-                      ? "live payments"
-                      : "sandbox"}
+                    {ENTITY_TYPES[c][0]} · {info?.plan.length ?? 11} steps
                   </div>
                 </button>
               );
@@ -130,10 +127,7 @@ export default function Home() {
           {country && (
             <>
               <label>Entity type</label>
-              <select
-                value={entityType}
-                onChange={(e) => setEntityType(e.target.value)}
-              >
+              <select value={entityType} onChange={(e) => setEntityType(e.target.value)}>
                 {ENTITY_TYPES[country].map((t) => (
                   <option key={t}>{t}</option>
                 ))}
@@ -145,11 +139,7 @@ export default function Home() {
 
           <div className="actions">
             <span />
-            <button
-              className="btn"
-              disabled={!country}
-              onClick={() => setPhase(1)}
-            >
+            <button className="btn" disabled={!country} onClick={() => setPhase(1)}>
               Continue →
             </button>
           </div>
@@ -181,10 +171,7 @@ export default function Home() {
             </div>
             <div>
               <label>
-                Founder tax ID{" "}
-                <span className="muted">
-                  ({country === "IN" ? "PAN" : country === "US" ? "SSN/ITIN" : "TIN"})
-                </span>
+                Founder tax ID ({country === "IN" ? "PAN" : country === "US" ? "SSN / ITIN" : "TIN"})
               </label>
               <input value={form.founder_id_number} onChange={set("founder_id_number")} />
             </div>
@@ -192,11 +179,11 @@ export default function Home() {
 
           <label>Registered address</label>
           <input value={form.line1} onChange={set("line1")} placeholder="Street address" />
-          <div className="row" style={{ marginTop: 14 }}>
+          <div className="row" style={{ marginTop: 16 }}>
             <input value={form.city} onChange={set("city")} placeholder="City" />
             <input value={form.state} onChange={set("state")} placeholder="State / region" />
           </div>
-          <div style={{ marginTop: 14 }}>
+          <div style={{ marginTop: 16 }}>
             <input value={form.postal_code} onChange={set("postal_code")} placeholder="Postal code" />
           </div>
 
@@ -213,11 +200,11 @@ export default function Home() {
       {phase === 2 && country && (
         <div className="card">
           <h3 style={{ marginTop: 0 }}>
-            {FLAGS[country]} {entityType} — {form.legal_name}
+            {entityType} — {form.legal_name}
           </h3>
           <p className="muted">
-            These {plan.length} API-backed steps will run in order. Steps marked{" "}
-            <span className="badge live">live</span> hit a real provider sandbox;{" "}
+            These {plan.length} API-backed steps run in order. Steps marked{" "}
+            <span className="badge live">live</span> call a real service;{" "}
             <span className="badge mock">mock</span> steps are deterministic stand-ins.
           </p>
           <PlanPreview plan={plan} />
@@ -229,7 +216,7 @@ export default function Home() {
               ← Back
             </button>
             <button className="btn" onClick={launch} disabled={submitting}>
-              {submitting ? <span className="spin" /> : "🚀"} Create launch
+              {submitting ? <span className="spin" /> : null} Create launch
             </button>
           </div>
         </div>
