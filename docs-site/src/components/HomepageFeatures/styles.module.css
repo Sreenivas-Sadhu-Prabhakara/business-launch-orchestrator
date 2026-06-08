@@ -1,0 +1,38 @@
+.features {
+  padding: 48px 0 8px;
+  width: 100%;
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  margin-bottom: 28px;
+}
+
+.card {
+  height: 100%;
+  background: var(--ifm-card-background-color, #fff);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 24px;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.card:hover {
+  border-color: var(--ifm-color-primary);
+  transform: translateY(-2px);
+}
+.icon {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+.card h3 {
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+.card p {
+  font-size: 14px;
+  color: var(--ifm-color-emphasis-700);
+  margin: 0;
+}
